@@ -195,24 +195,57 @@ const App = {
     },
 
     startTimer(seg) {
-        this.closeDescanso(); clearInterval(this.state.timerInterval);
+        this.closeDescanso(); 
+        clearInterval(this.state.timerInterval);
+        
         const display = document.getElementById('timer-display');
         const clock = document.getElementById('timer-clock');
         const label = document.getElementById('timer-label');
-        display.classList.remove('hidden'); clock.classList.remove('timer-alert');
+        const beep = document.getElementById('beep-sound');
+
+        display.classList.remove('hidden'); 
+        clock.classList.remove('timer-alert');
         label.innerText = "Descansando";
+        
         let t = parseInt(seg);
+
+        // Função auxiliar para tocar o beep de forma limpa e sincronizada
+        const playBeep = () => {
+            beep.pause();
+            beep.currentTime = 0; // Reseta o áudio para o início
+            beep.play().catch(e => console.log("Aguardando interação para áudio"));
+        };
+
         this.state.timerInterval = setInterval(() => {
             t--;
-            const m = Math.floor(t / 60); const s = t % 60;
+            const m = Math.floor(t / 60); 
+            const s = t % 60;
             clock.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            if (t <= 5 && t > 0) document.getElementById('beep-sound').play();
+            
+            // Beep sincronizado nos últimos 5 segundos (5, 4, 3, 2, 1)
+            if (t <= 4 && t > 0) {
+                playBeep();
+            }
+            
             if (t <= 0) {
-                clock.innerText = "00:00"; clock.classList.add('timer-alert');
-                label.innerText = "VOLTAR AO TREINO!";
-                let extra = 5;
-                const final = setInterval(() => { document.getElementById('beep-sound').play(); extra--; if(extra <= 0){ clearInterval(final); display.classList.add('hidden'); } }, 1000);
                 clearInterval(this.state.timerInterval);
+                clock.innerText = "00:00";
+                clock.classList.add('timer-alert');
+                label.innerText = "VOLTAR AO TREINO!";
+                
+                // Beep pós-timer: Toca no 0 e mais 4 vezes (total 5s de aviso extra)
+                let extraBeeps = 5;
+                playBeep(); // Beep do tempo esgotado (0s)
+                
+                const finalInterval = setInterval(() => {
+                    extraBeeps--;
+                    if (extraBeeps <= 0) {
+                        clearInterval(finalInterval);
+                        display.classList.add('hidden');
+                    } else {
+                        playBeep();
+                    }
+                }, 1000);
             }
         }, 1000);
     },
