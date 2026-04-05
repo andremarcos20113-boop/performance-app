@@ -1,6 +1,7 @@
 import DataService from './data-service.js';
 
 const App = {
+    // --- CONFIGURAÇÃO DE MARCA DO CLIENTE ---
     config: {
         teamName: "CASSIANO",
         teamSlogan: "TEAM",
@@ -21,6 +22,7 @@ const App = {
         this.bindEvents();
         this.gerarOpcoesDescanso();
 
+        // Controla visibilidade da engrenagem
         const btnConfig = document.getElementById('btn-config-trigger');
         if (!DataService.spreadsheetId || (this.user && this.user.tipo === 'ADMIN')) {
             btnConfig?.classList.remove('hidden');
@@ -34,33 +36,30 @@ const App = {
         }
     },
 
-    async verificarAdmin() {
-        const input = document.getElementById('admin-login-check').value.toLowerCase().trim();
-        const step1 = document.getElementById('config-step-1');
-        const step2 = document.getElementById('config-step-2');
-        if (!DataService.spreadsheetId) { step1.classList.add('hidden'); step2.classList.remove('hidden'); return; }
-        if (!input) return alert("Digite o login admin!");
-        try {
-            const users = await DataService.getUsuarios();
-            const admin = users.find(u => u.login === input && u.tipo === 'ADMIN');
-            if (admin) { step1.classList.add('hidden'); step2.classList.remove('hidden'); document.getElementById('input-sheet-id').value = DataService.spreadsheetId; }
-            else { alert("Acesso Negado!"); }
-        } catch (e) { alert("Erro de conexão."); }
-    },
-
+    // --- RENDERIZAÇÃO DOS CARDS ---
     renderizarCards(filtrados) {
         const container = document.getElementById('container-treino');
         container.innerHTML = filtrados.map((item, idx) => {
             const idUnico = `row-${item.semana}-${item.dia}-${idx}`;
             const isDone = this.state.done[idUnico] || false;
             const prSalvo = this.state.prs[item.exercicio] || 0;
+            
             let cargaExibida = item.cargaOriginal;
             let mostrarPR = false;
-            const val = parseFloat(String(item.cargaOriginal).replace('%','').replace(',','.'));
-            if (String(item.cargaOriginal).includes('%') || (val > 0 && val < 1.1)) {
+
+            const valStr = String(item.cargaOriginal).replace('%','').replace(',','.');
+            const valNum = parseFloat(valStr);
+
+            if (String(item.cargaOriginal).includes('%') || (valNum > 0 && valNum < 1.1)) {
                 mostrarPR = true;
-                const perc = val < 1.1 ? val * 100 : val;
-                cargaExibida = prSalvo > 0 ? `${Math.round(prSalvo * (perc/100))}kg <small class="opacity-40">(${Math.round(perc)}%)</small>` : `<span class="text-blue-800 text-[10px] font-bold">Defina o PR</span>`;
+                const perc = valNum < 1.1 ? valNum * 100 : valNum;
+                const multiplicador = perc / 100;
+                
+                // Criamos um SPAN com ID único para atualizar apenas o número da carga
+                const pesoCalculado = prSalvo > 0 ? Math.round(prSalvo * multiplicador) + "kg" : "Defina o PR";
+                const classeCor = prSalvo > 0 ? "" : "text-blue-800 text-[10px] font-bold";
+                
+                cargaExibida = `<span id="target-${idUnico}" class="${classeCor}">${pesoCalculado}</span> <small class="opacity-40">(${Math.round(perc)}%)</small>`;
             }
 
             return `
@@ -71,7 +70,7 @@ const App = {
                             <p class="text-blue-500 font-bold text-[10px] uppercase tracking-widest">${item.seriesReps}</p>
                         </div>
                         <div class="flex items-center gap-3">
-                             <button onclick="App.openDescanso()" class="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 border border-white/5 text-slate-400">
+                             <button onclick="App.openDescanso()" class="flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 border border-white/5 text-slate-400 active:bg-blue-600/20">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <span class="text-[8px] font-black uppercase mt-1">Timer</span>
                              </button>
@@ -87,6 +86,8 @@ const App = {
                                        value="${prSalvo || ''}" 
                                        inputmode="decimal"
                                        data-ex="${item.exercicio}"
+                                       data-perc="${valNum < 1.1 ? valNum : valNum/100}"
+                                       data-tid="target-${idUnico}"
                                        class="pr-input w-full bg-transparent text-xl font-black text-white outline-none focus:text-blue-400" 
                                        placeholder="0">
                             </div>
@@ -102,12 +103,34 @@ const App = {
         }).join('');
     },
 
-    savePR(ex, val) { 
-        this.state.prs[ex] = parseFloat(val) || 0; 
+    // --- SALVAMENTO E ATUALIZAÇÃO CIRÚRGICA (FIM DO BUG DO CURSOR) ---
+    savePR(ex, val, targetId, percent) { 
+        const peso = parseFloat(val) || 0;
+        this.state.prs[ex] = peso; 
         localStorage.setItem('gym_prs', JSON.stringify(this.state.prs));
+        
+        // Atualiza apenas o texto do elemento alvo sem reconstruir o card
+        const display = document.getElementById(targetId);
+        if (display) {
+            if (peso > 0) {
+                display.innerText = Math.round(peso * percent) + "kg";
+                display.classList.remove('text-blue-800', 'text-[10px]', 'font-bold');
+            } else {
+                display.innerText = "Defina o PR";
+                display.classList.add('text-blue-800', 'text-[10px]', 'font-bold');
+            }
+        }
     },
 
     bindEvents() {
+        // Evento de Digitação (INPUT): Atualiza o cálculo em tempo real sem perder o foco
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('pr-input')) {
+                const ds = e.target.dataset;
+                this.savePR(ds.ex, e.target.value, ds.tid, parseFloat(ds.perc));
+            }
+        });
+
         document.getElementById('btn-entrar')?.addEventListener('click', () => this.realizarLogin());
         document.getElementById('btn-logout-header')?.addEventListener('click', () => this.logout());
         document.getElementById('btn-config-trigger')?.addEventListener('click', () => document.getElementById('modal-config').classList.remove('hidden'));
@@ -118,25 +141,20 @@ const App = {
         });
         document.getElementById('btn-fechar-config')?.addEventListener('click', () => document.getElementById('modal-config').classList.add('hidden'));
         document.getElementById('overlay-descanso')?.addEventListener('click', () => this.closeDescanso());
-
-        // NOVO: Captura a mudança de PR de forma estável (sem recarregar a tela inteira enquanto digita)
-        document.addEventListener('change', (e) => {
-            if (e.target.classList.contains('pr-input')) {
-                this.savePR(e.target.dataset.ex, e.target.value);
-                this.filtrar(); // Atualiza os números de carga só quando o cara sai do campo
-            }
-        });
     },
 
-    // --- APOIO ---
+    // --- FUNÇÕES DE APOIO ---
     async carregarTreino(aba) {
         this.showView('view-treino');
+        const badge = document.getElementById('user-badge');
+        if(badge) { badge.innerText = this.user.nome; badge.classList.remove('hidden'); }
         const container = document.getElementById('container-treino');
         container.innerHTML = `<div class="py-20 text-center animate-pulse text-blue-600 font-bold text-[10px]">SINCRONIZANDO...</div>`;
         const dados = await DataService.fetchSheetData(aba);
         this.state.treinoDataCompleto = dados;
         this.configurarFiltros(dados);
     },
+
     configurarFiltros(dados) {
         const selS = document.getElementById('select-semana');
         const selD = document.getElementById('select-dia');
@@ -152,22 +170,30 @@ const App = {
         if(selD) selD.onchange = () => this.filtrar();
         atualizar();
     },
+
     filtrar() {
         const sem = document.getElementById('select-semana').value;
         const dia = document.getElementById('select-dia').value;
         const filtrados = this.state.treinoDataCompleto.filter(i => String(i.semana) === sem && i.dia === dia);
         this.renderizarCards(filtrados);
     },
+
     aplicarLayout() {
         document.getElementById('team-name-header').innerHTML = `${this.config.teamName} <span class="text-accent not-italic">${this.config.teamSlogan}</span>`;
         document.getElementById('team-name-login').innerText = `${this.config.teamName} ${this.config.teamSlogan}`;
         document.getElementById('login-logo').src = this.config.logoUrl;
     },
-    showView(id) { document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById(id)?.classList.remove('hidden'); },
+
+    showView(id) {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.getElementById(id)?.classList.remove('hidden');
+    },
+
     gerarOpcoesDescanso() {
         const tempos = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
         document.getElementById('timer-options').innerHTML = tempos.map(t => `<button onclick="App.startTimer(${t})" class="bg-white/5 border border-white/10 py-4 rounded-2xl font-black text-white active:scale-95 transition-all">${t < 60 ? t+'s' : (t/60).toFixed(1)+'m'}</button>`).join('');
     },
+
     startTimer(seg) {
         this.closeDescanso(); clearInterval(this.state.timerInterval);
         const display = document.getElementById('timer-display');
@@ -190,11 +216,7 @@ const App = {
             }
         }, 1000);
     },
-    toggleDone(id) { this.state.done[id] = !this.state.done[id]; localStorage.setItem('gym_done', JSON.stringify(this.state.done)); this.filtrar(); },
-    logout() { localStorage.clear(); location.reload(); },
-    openDescanso() { document.getElementById('overlay-descanso').classList.remove('hidden'); document.getElementById('sheet-descanso').classList.add('open'); },
-    closeDescanso() { document.getElementById('overlay-descanso').classList.add('hidden'); document.getElementById('sheet-descanso').classList.remove('open'); },
-    resetTimer() { clearInterval(this.state.timerInterval); document.getElementById('timer-display').classList.add('hidden'); },
+
     async realizarLogin() {
         const input = document.getElementById('input-login').value.toLowerCase().trim();
         if (!input) return;
@@ -203,7 +225,26 @@ const App = {
             const u = users.find(x => x.login === input);
             if (u) { localStorage.setItem('gym_user', JSON.stringify(u)); location.reload(); } else { alert("Acesso Negado!"); }
         } catch (e) { alert("Erro ao conectar."); }
-    }
+    },
+
+    async verificarAdmin() {
+        const input = document.getElementById('admin-login-check').value.toLowerCase().trim();
+        const step1 = document.getElementById('config-step-1');
+        const step2 = document.getElementById('config-step-2');
+        if (!DataService.spreadsheetId) { step1.classList.add('hidden'); step2.classList.remove('hidden'); return; }
+        if (!input) return alert("Digite seu login!");
+        try {
+            const users = await DataService.getUsuarios();
+            const admin = users.find(u => u.login === input && u.tipo === 'ADMIN');
+            if (admin) { step1.classList.add('hidden'); step2.classList.remove('hidden'); document.getElementById('input-sheet-id').value = DataService.spreadsheetId; } else { alert("Acesso Negado!"); }
+        } catch (e) { alert("Erro ao validar."); }
+    },
+
+    toggleDone(id) { this.state.done[id] = !this.state.done[id]; localStorage.setItem('gym_done', JSON.stringify(this.state.done)); this.filtrar(); },
+    logout() { localStorage.clear(); location.reload(); },
+    openDescanso() { document.getElementById('overlay-descanso').classList.remove('hidden'); document.getElementById('sheet-descanso').classList.add('open'); },
+    closeDescanso() { document.getElementById('overlay-descanso').classList.add('hidden'); document.getElementById('sheet-descanso').classList.remove('open'); },
+    resetTimer() { clearInterval(this.state.timerInterval); document.getElementById('timer-display').classList.add('hidden'); }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
