@@ -12,16 +12,10 @@
         .hidden { display: none !important; }
         .text-accent { color: #3b82f6; }
         .bg-accent { background-color: #2563eb; }
-        
-        /* Bottom Sheet Animada */
         #sheet-descanso { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); }
         #sheet-descanso.open { transform: translateY(0); }
-        
-        /* Alerta de Treino */
         .timer-alert { animation: shake 0.5s infinite; color: #ef4444 !important; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
-        
-        /* Ajuste de clique em inputs no iOS */
         input, select, button { font-size: 16px !important; } 
     </style>
 </head>
@@ -48,12 +42,12 @@
             <div class="text-center mb-10">
                 <img id="login-logo" src="" class="h-24 w-24 rounded-3xl mx-auto mb-6 object-cover shadow-2xl bg-slate-900">
                 <h2 class="text-3xl font-black text-white italic tracking-tighter uppercase leading-none" id="team-name-login">TREINADOR</h2>
-                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2">Área Exclusiva</p>
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-2">Plataforma de Performance</p>
             </div>
             <div class="glass-card p-8">
                 <div class="space-y-4">
-                    <input type="text" id="input-login" class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-lg outline-none focus:border-blue-600 text-white font-bold transition-all" placeholder="E-mail ou Código">
-                    <button id="btn-entrar" class="w-full bg-accent text-white font-black py-5 rounded-2xl active:scale-95 transition-all uppercase tracking-widest shadow-lg shadow-blue-600/20">Acessar Plano</button>
+                    <input type="text" id="input-login" class="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center text-lg outline-none focus:border-blue-600 text-white font-bold transition-all" placeholder="Seu E-mail ou Código">
+                    <button id="btn-entrar" class="w-full bg-accent text-white font-black py-5 rounded-2xl active:scale-95 transition-all uppercase tracking-widest shadow-lg shadow-blue-600/20">Entrar no Treino</button>
                 </div>
             </div>
         </section>
@@ -69,8 +63,7 @@
                     <select id="select-dia" class="w-full bg-slate-900/50 border border-white/10 rounded-xl p-3 text-sm text-white outline-none focus:border-blue-500"></select>
                 </div>
             </div>
-            <div id="container-treino" class="space-y-5">
-                </div>
+            <div id="container-treino" class="space-y-5"></div>
         </section>
 
     </main>
@@ -80,18 +73,17 @@
     <div id="sheet-descanso" class="fixed bottom-0 left-0 right-0 bg-[#0f172a] rounded-t-[40px] p-8 z-[70] border-t border-white/10 shadow-2xl">
         <div class="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mb-8"></div>
         <div class="flex justify-between items-center mb-8">
-            <h3 class="text-xl font-black uppercase italic tracking-tighter text-white">Tempo de Descanso</h3>
+            <h3 class="text-xl font-black uppercase italic tracking-tighter text-white">Descanso</h3>
             <button onclick="App.closeDescanso()" class="bg-white/5 p-2 rounded-full text-slate-400 hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
-        <div class="grid grid-cols-3 gap-3 mb-4" id="timer-options">
-            </div>
+        <div class="grid grid-cols-3 gap-3 mb-4" id="timer-options"></div>
     </div>
 
     <div id="timer-display" class="fixed bottom-6 right-6 glass-card p-5 hidden z-[80] flex items-center gap-5 border-blue-500/40 shadow-2xl ring-1 ring-blue-500/20">
         <div class="flex flex-col">
-            <span class="text-[8px] text-slate-500 font-black uppercase tracking-tighter" id="timer-label">Descansando</span>
+            <span class="text-[8px] text-slate-500 font-black uppercase tracking-tighter" id="timer-label">Ação</span>
             <span id="timer-clock" class="font-black text-3xl tabular-nums text-blue-400 leading-none">00:00</span>
         </div>
         <button onclick="App.resetTimer()" class="bg-red-500/10 text-red-500 p-3 rounded-2xl hover:bg-red-500/20 transition-all">
@@ -101,23 +93,16 @@
 
     <div id="modal-config" class="fixed inset-0 bg-black/95 hidden z-[100] flex items-center justify-center p-6 backdrop-blur-xl">
         <div class="glass-card p-8 w-full max-w-sm border-blue-500/30 shadow-2xl">
-            <h3 class="text-blue-500 font-black text-2xl mb-2 uppercase italic tracking-tighter">Setup</h3>
-            <p class="text-slate-500 text-[10px] mb-8 font-bold uppercase tracking-widest leading-none">Configuração do Sistema</p>
-            
+            <h3 class="text-blue-500 font-black text-2xl mb-2 uppercase italic tracking-tighter">Setup Adm</h3>
             <div id="config-step-1" class="space-y-4">
                 <input type="text" id="admin-login-check" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center outline-none focus:border-blue-600 text-white" placeholder="Login Admin">
-                <button id="btn-verify-admin" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-600/20 uppercase tracking-widest text-xs">Verificar</button>
+                <button id="btn-verify-admin" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-600/20 uppercase tracking-widest text-xs">Validar</button>
             </div>
-
             <div id="config-step-2" class="hidden space-y-4">
-                <div class="bg-blue-500/5 p-4 rounded-2xl border border-blue-500/10 mb-4">
-                    <p class="text-[9px] text-blue-400 font-bold uppercase mb-2">ID da Planilha Master</p>
-                    <input type="text" id="input-sheet-id" class="w-full bg-transparent text-xs text-white outline-none" placeholder="Cole o ID aqui...">
-                </div>
-                <button id="btn-salvar-config" class="w-full bg-accent text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs">Vincular Agora</button>
+                <input type="text" id="input-sheet-id" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-xs text-white outline-none" placeholder="ID Planilha Google">
+                <button id="btn-salvar-config" class="w-full bg-accent text-white font-black py-4 rounded-2xl uppercase tracking-widest text-xs">Vincular</button>
             </div>
-            
-            <button id="btn-fechar-config" class="w-full py-4 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-4 hover:text-white transition-colors">Fechar Painel</button>
+            <button id="btn-fechar-config" class="w-full py-4 text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-4 hover:text-white transition-colors">Voltar</button>
         </div>
     </div>
 
