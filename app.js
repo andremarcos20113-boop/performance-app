@@ -25,10 +25,8 @@ const App = {
         // Controla visibilidade da engrenagem no Init
         const btnConfig = document.getElementById('btn-config-trigger');
         if (!DataService.spreadsheetId) {
-            // Se não tem planilha, mostra a engrenagem para o professor configurar
             btnConfig?.classList.remove('hidden');
         } else if (this.user && this.user.tipo === 'ADMIN') {
-            // Se o usuário logado for ADMIN, mostra a engrenagem
             btnConfig?.classList.remove('hidden');
         }
 
@@ -40,20 +38,17 @@ const App = {
         }
     },
 
-    // --- SEGURANÇA: VERIFICAÇÃO DE ADMIN ---
     async verificarAdmin() {
         const input = document.getElementById('admin-login-check').value.toLowerCase().trim();
         const step1 = document.getElementById('config-step-1');
         const step2 = document.getElementById('config-step-2');
 
-        // Caso 1: Ainda não existe planilha vinculada (Primeiro acesso do treinador)
         if (!DataService.spreadsheetId) {
             step1.classList.add('hidden');
             step2.classList.remove('hidden');
             return;
         }
 
-        // Caso 2: Já existe planilha, precisa validar o login
         if (!input) return alert("Digite seu login de administrador!");
 
         try {
@@ -72,7 +67,6 @@ const App = {
         }
     },
 
-    // --- RENDERIZAÇÃO DOS CARDS (COM TIMER E PR FIXO) ---
     renderizarCards(filtrados) {
         const container = document.getElementById('container-treino');
         container.innerHTML = filtrados.map((item, idx) => {
@@ -110,7 +104,12 @@ const App = {
                         <div class="flex items-center justify-between gap-4">
                             <div class="bg-slate-900/50 p-3 rounded-2xl border border-white/5 flex-1">
                                 <label class="text-[8px] text-slate-500 uppercase font-black block mb-1">PR (kg)</label>
-                                <input type="number" value="${prSalvo || ''}" oninput="App.savePR('${item.exercicio}', this.value)" class="w-full bg-transparent text-xl font-black text-white outline-none" placeholder="0">
+                                <input type="number" 
+                                       value="${prSalvo || ''}" 
+                                       inputmode="decimal"
+                                       onchange="App.savePR('${item.exercicio}', this.value)" 
+                                       class="w-full bg-transparent text-xl font-black text-white outline-none focus:text-blue-400" 
+                                       placeholder="0">
                             </div>
                             <div class="text-right flex-1">
                                  <p class="text-[8px] text-slate-500 uppercase font-black mb-1 italic">Carga</p>
@@ -124,7 +123,6 @@ const App = {
         }).join('');
     },
 
-    // --- FUNÇÕES DE APOIO ---
     async carregarTreino(aba) {
         this.showView('view-treino');
         const badge = document.getElementById('user-badge');
@@ -199,7 +197,14 @@ const App = {
     },
 
     resetTimer() { clearInterval(this.state.timerInterval); document.getElementById('timer-display').classList.add('hidden'); },
-    savePR(ex, val) { this.state.prs[ex] = parseFloat(val) || 0; localStorage.setItem('gym_prs', JSON.stringify(this.state.prs)); this.filtrar(); },
+    
+    savePR(ex, val) { 
+        this.state.prs[ex] = parseFloat(val) || 0; 
+        localStorage.setItem('gym_prs', JSON.stringify(this.state.prs)); 
+        // Removido o this.filtrar() daqui para evitar pulos de tela enquanto digita. 
+        // O valor da carga alvo será atualizado na próxima vez que a tela filtrar ou quando o card for redesenhado.
+    },
+    
     toggleDone(id) { this.state.done[id] = !this.state.done[id]; localStorage.setItem('gym_done', JSON.stringify(this.state.done)); this.filtrar(); },
     logout() { localStorage.clear(); location.reload(); },
     openDescanso() { document.getElementById('overlay-descanso').classList.remove('hidden'); document.getElementById('sheet-descanso').classList.add('open'); },
